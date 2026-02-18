@@ -173,7 +173,7 @@ export const loginUser = TryCatch(async (req, res) => {
 
   const otpKey = `login-otp:${email}`;
 
-  await redisClient.set(otpKey, otp, { EX: 300 });
+  await redisClient.set(otpKey, otp.stringify(), { EX: 300 });
 
   const subject = "Your login OTP";
   const html = getOtpHtml({ email, otp });
@@ -186,5 +186,41 @@ export const loginUser = TryCatch(async (req, res) => {
     success: true,
     message:
       "if your email is valid, you will receive a login OTP shortly and expires in 5 minutes",
+  });
+});
+
+export const verifyLoginOtp = TryCatch(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and OTP are required",
+    });
+  }
+
+  const otpKey = `login-otp:${email}`;
+
+  const storedOtp = await redisClient.get(otpKey);
+
+  if (!storedOtp || storedOtp !== otp) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid or expired OTP",
+    });
+  }
+
+  await redisClient.del(otpKey);
+
+  const user = await User.findOne({ email });
+
+  res.status(200).json({
+    success: true,
+    message: "Login successful",
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+    },
   });
 });
