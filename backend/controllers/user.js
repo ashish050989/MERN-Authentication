@@ -7,6 +7,7 @@ import User from "../models/User.js";
 import crypto from "crypto";
 import { sendMail } from "../config/sendMail.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
+import { generateToken } from "../config/generateToken.js";
 
 export const registerUser = TryCatch(async (req, res) => {
   const sanitizedBody = sanitize(req.body);
@@ -173,7 +174,7 @@ export const loginUser = TryCatch(async (req, res) => {
 
   const otpKey = `login-otp:${email}`;
 
-  await redisClient.set(otpKey, otp.stringify(), { EX: 300 });
+  await redisClient.set(otpKey, otp.toString(), { EX: 300 });
 
   const subject = "Your login OTP";
   const html = getOtpHtml({ email, otp });
@@ -191,6 +192,8 @@ export const loginUser = TryCatch(async (req, res) => {
 
 export const verifyLoginOtp = TryCatch(async (req, res) => {
   const { email, otp } = req.body;
+
+  console.log("Received OTP verification request:", { email, otp });
 
   if (!email || !otp) {
     return res.status(400).json({
@@ -214,13 +217,12 @@ export const verifyLoginOtp = TryCatch(async (req, res) => {
 
   const user = await User.findOne({ email });
 
+  const tokenData = await generateToken(user._id, res);
+
   res.status(200).json({
     success: true,
-    message: "Login successful",
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-    },
+    message: `Welcome ${user.name}`,
+    user,
+    ...tokenData,
   });
 });
