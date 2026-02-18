@@ -193,8 +193,6 @@ export const loginUser = TryCatch(async (req, res) => {
 export const verifyLoginOtp = TryCatch(async (req, res) => {
   const { email, otp } = req.body;
 
-  console.log("Received OTP verification request:", { email, otp });
-
   if (!email || !otp) {
     return res.status(400).json({
       success: false,
@@ -258,5 +256,19 @@ export const refreshToken = TryCatch(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Access token refreshed successfully",
+  });
+});
+
+export const logoutUser = TryCatch(async (req, res) => {
+  const userId = req.userId;
+
+  await redisClient.del(`refresh-token:${userId}`);
+
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
   });
 });
