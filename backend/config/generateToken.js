@@ -30,3 +30,31 @@ export const generateToken = async (id, res) => {
 
   return { accessToken, refreshToken };
 };
+
+export const verifyRefreshToken = async (refreshToken) => {
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const refreshTokenKey = `refresh-token:${decoded.id}`;
+    const storedToken = await redisClient.get(refreshTokenKey);
+
+    if (storedToken === refreshToken) {
+      return decoded;
+    }
+    return null;
+  } catch (error) {
+    throw new Error("Invalid refresh token");
+  }
+};
+
+export const generateAccessToken = (id) => {
+  const accessToken = jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: "1m",
+  });
+
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 1 * 60 * 1000,
+  });
+};

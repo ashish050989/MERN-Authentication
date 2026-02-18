@@ -5,6 +5,7 @@ import connectDB from "./config/db.js";
 
 import userRoutes from "./routes/user.js";
 import { createClient } from "redis";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.get("/", (req, res) => {
 });
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/v1", userRoutes);
 

@@ -7,7 +7,7 @@ import User from "../models/User.js";
 import crypto from "crypto";
 import { sendMail } from "../config/sendMail.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
-import { generateToken } from "../config/generateToken.js";
+import { generateToken, verifyRefreshToken } from "../config/generateToken.js";
 
 export const registerUser = TryCatch(async (req, res) => {
   const sanitizedBody = sanitize(req.body);
@@ -224,5 +224,39 @@ export const verifyLoginOtp = TryCatch(async (req, res) => {
     message: `Welcome ${user.name}`,
     user,
     ...tokenData,
+  });
+});
+
+export const myProfile = TryCatch(async (req, res) => {
+  const user = req.user;
+
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});
+
+export const refreshToken = TryCatch(async (req, res) => {
+  const { refreshToken } = req.cookies;
+
+  if (!refreshToken) {
+    return res.status(401).json({
+      success: false,
+      message: "Refresh token is required",
+    });
+  }
+  const decoded = await verifyRefreshToken(refreshToken);
+  if (!decoded) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid refresh token",
+    });
+  }
+
+  await generateToken(decoded.id, res);
+
+  res.status(200).json({
+    success: true,
+    message: "Access token refreshed successfully",
   });
 });
