@@ -4,8 +4,29 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 
 import userRoutes from "./routes/user.js";
+import { createClient } from "redis";
 
 dotenv.config();
+
+const redisUrl = process.env.REDIS_URL;
+
+if (!redisUrl) {
+  console.error("REDIS_URL is not defined in environment variables");
+  process.exit(1);
+}
+export const redisClient = createClient({
+  url: redisUrl,
+});
+
+redisClient
+  .connect()
+  .then(() => {
+    console.log("Connected to Redis");
+  })
+  .catch((err) => {
+    console.error("Failed to connect to Redis:", err);
+    process.exit(1);
+  });
 
 await connectDB();
 const app = express();
